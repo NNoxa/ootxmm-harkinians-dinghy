@@ -23,6 +23,13 @@ Other ROMs may work, but these are the stability baseline used during developmen
 
 ## Release Packaging
 
+After a fresh clone, initialize the submodules and apply the local crossover submodule patches:
+
+```powershell
+git submodule update --init --recursive
+powershell -ExecutionPolicy Bypass -File .\tools\Apply-SubmodulePatches.ps1
+```
+
 Build the release package with:
 
 ```powershell
