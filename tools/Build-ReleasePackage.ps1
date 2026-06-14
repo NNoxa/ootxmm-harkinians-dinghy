@@ -33,6 +33,10 @@ Copy-Item -LiteralPath (Join-Path $root "extracted_win\soh\gamecontrollerdb.txt"
     -Destination (Join-Path $stage "soh\gamecontrollerdb.txt") -Force
 Copy-Item -LiteralPath (Join-Path $root "extracted_win\soh\readme.txt") `
     -Destination (Join-Path $stage "soh\readme.txt") -Force
+Copy-Item -LiteralPath (Join-Path $root "source files\Shipwright-9.2.3\soh\assets") `
+    -Destination (Join-Path $stage "soh\assets") -Recurse -Force
+Copy-Item -Path (Join-Path $root "source files\Shipwright-9.2.3\soh\assets\extractor\*") `
+    -Destination (Join-Path $stage "soh\assets") -Recurse -Force
 
 Copy-Item -LiteralPath (Join-Path $root "source files\2ship2harkinian-4.0.2\x64\Release\2ship.exe") `
     -Destination (Join-Path $stage "2ship\2ship.exe") -Force
@@ -44,6 +48,10 @@ Copy-Item -LiteralPath (Join-Path $root "extracted_win\2ship\readme.txt") `
     -Destination (Join-Path $stage "2ship\readme.txt") -Force
 Copy-Item -LiteralPath (Join-Path $root "extracted_win\2ship\2S2HTimeSplitData.json") `
     -Destination (Join-Path $stage "2ship\2S2HTimeSplitData.json") -Force
+Copy-Item -LiteralPath (Join-Path $root "source files\2ship2harkinian-4.0.2\mm\assets") `
+    -Destination (Join-Path $stage "2ship\assets") -Recurse -Force
+Copy-Item -Path (Join-Path $root "source files\2ship2harkinian-4.0.2\mm\assets\extractor\*") `
+    -Destination (Join-Path $stage "2ship\assets") -Recurse -Force
 
 $assetRoot = Join-Path $root "shared_assets\ootxmm"
 Copy-Item -LiteralPath (Join-Path $assetRoot "ootxmm_assets.o2r") `

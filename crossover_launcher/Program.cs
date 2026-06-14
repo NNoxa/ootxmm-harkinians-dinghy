@@ -57,6 +57,7 @@ internal static class Program {
             var statePath = Resolve(root, config.StateFile);
             var handoffPath = Resolve(root, config.HandoffFile);
             EnsureStateFile(statePath);
+            PrepareFirstRunArchives(root);
 
             Console.WriteLine("SoH / 2Ship Crossover Launcher");
             Console.WriteLine($"Root: {root}");
@@ -261,6 +262,68 @@ internal static class Program {
         var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Failed to start {exe}");
         Console.WriteLine($"Started {game}: pid {process.Id}");
         return process;
+    }
+
+    private static void PrepareFirstRunArchives(string root) {
+        var romDir = Path.Combine(root, "roms");
+        if (!Directory.Exists(romDir)) {
+            return;
+        }
+
+        CopyFirstRunRom(root, GameId.Oot);
+        CopyFirstRunRom(root, GameId.Mm);
+    }
+
+    private static void CopyFirstRunRom(string root, GameId game) {
+        var targetDir = game == GameId.Oot ? GetSohDir(root) : GetTwoShipDir(root);
+        if (!Directory.Exists(targetDir)) {
+            return;
+        }
+
+        var archiveName = game == GameId.Oot ? "oot.o2r" : "mm.o2r";
+        var romName = game == GameId.Oot ? "oot.z64" : "mm.z64";
+        var archivePath = Path.Combine(targetDir, archiveName);
+        var romPath = Path.Combine(targetDir, romName);
+        if (File.Exists(archivePath) || File.Exists(romPath)) {
+            return;
+        }
+
+        var rom = FindRom(root, game);
+        if (rom == null) {
+            return;
+        }
+
+        File.Copy(rom, romPath, overwrite: false);
+        Console.WriteLine($"Copied {Path.GetFileName(rom)} to {romPath} for first-run extraction.");
+    }
+
+    private static string? FindRom(string root, GameId game) {
+        var romDir = Path.Combine(root, "roms");
+        if (!Directory.Exists(romDir)) {
+            return null;
+        }
+
+        var files = Directory.EnumerateFiles(romDir)
+            .Where(path => IsRomExtension(Path.GetExtension(path)))
+            .Select(path => new FileInfo(path))
+            .Where(file => file.Exists)
+            .ToList();
+
+        if (game == GameId.Oot) {
+            return files.FirstOrDefault(file => file.Length == 67_108_864)?.FullName ??
+                   files.FirstOrDefault(file => file.Name.Contains("Ocarina", StringComparison.OrdinalIgnoreCase) ||
+                                                file.Name.Contains("OoT", StringComparison.OrdinalIgnoreCase))?.FullName;
+        }
+
+        return files.FirstOrDefault(file => file.Length == 33_554_432)?.FullName ??
+               files.FirstOrDefault(file => file.Name.Contains("Majora", StringComparison.OrdinalIgnoreCase) ||
+                                            file.Name.Contains("MM", StringComparison.OrdinalIgnoreCase))?.FullName;
+    }
+
+    private static bool IsRomExtension(string extension) {
+        return extension.Equals(".z64", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".n64", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".v64", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void StopGame(Process? process, int gracefulExitMilliseconds) {
