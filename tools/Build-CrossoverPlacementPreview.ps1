@@ -1698,6 +1698,16 @@ $sohSpoilerPath = Resolve-SoHSpoilerPath $Root
 $twoShipSpoilerPath = Resolve-2ShipSpoilerPath $Root
 $seedManifestPath = Join-Path $Root "crossover_seed.json"
 
+if (-not $sohSpoilerPath -or -not (Test-Path -LiteralPath $sohSpoilerPath)) {
+    Write-Host "Waiting for SoH spoiler before building crossover placements."
+    exit 0
+}
+
+if (-not $twoShipSpoilerPath -or -not (Test-Path -LiteralPath $twoShipSpoilerPath)) {
+    Write-Host "Waiting for 2Ship spoiler before building crossover placements."
+    exit 0
+}
+
 $sohSpoiler = Read-JsonFile $sohSpoilerPath
 $twoShipSpoiler = Read-JsonFile $twoShipSpoilerPath
 $seedManifest = Read-JsonFile $seedManifestPath

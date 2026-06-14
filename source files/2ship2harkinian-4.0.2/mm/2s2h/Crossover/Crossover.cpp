@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -85,6 +86,7 @@ bool sGossipHintsLoaded = false;
 void WriteJsonAtomic(const std::filesystem::path& path, const nlohmann::json& json);
 nlohmann::json ReadJsonOrObject(const std::filesystem::path& path);
 int GetCurrentSaveSlot();
+void RebuildPlacementManifest(const std::filesystem::path& root);
 void SaveCurrentGameBeforeSwitch();
 bool RequestSwitchToOot(bool saveBeforeSwitch, const std::string& requestedEntrance, const std::string& returnEntrance);
 std::optional<std::filesystem::path> FindCrossoverRoot();
@@ -427,6 +429,23 @@ std::optional<nlohmann::json> ReadPlacementManifest(const std::filesystem::path&
     }
 
     return std::nullopt;
+}
+
+void RebuildPlacementManifest(const std::filesystem::path& root) {
+    const auto scriptPath = root / "tools" / "Build-CrossoverPlacementPreview.ps1";
+    if (!std::filesystem::exists(scriptPath)) {
+        SPDLOG_WARN("[OoTxMM] Placement builder script not found: {}", scriptPath.string());
+        return;
+    }
+
+    const std::string command = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"" + scriptPath.string() +
+                                "\" -Root \"" + root.string() + "\"";
+    const int result = std::system(command.c_str());
+    if (result != 0) {
+        SPDLOG_WARN("[OoTxMM] Placement builder exited with {}", result);
+    } else {
+        SPDLOG_INFO("[OoTxMM] Placement builder completed from 2Ship");
+    }
 }
 
 uint32_t StableHashString(const std::string& value) {
@@ -2534,6 +2553,14 @@ void BootToClockTownExit(const nlohmann::json& handoff) {
     }
     GameInteractor_ExecuteOnSaveLoad(gSaveContext.fileNum);
     gSaveContext.save.entrance = targetEntrance;
+    if (!loadExistingSave) {
+        if (const auto root = FindCrossoverRoot(); root.has_value()) {
+            RebuildPlacementManifest(*root);
+            sSharedPlacementsLoaded = false;
+            sSharedPlacementsAppliedToNativeRando = false;
+            sGossipHintsLoaded = false;
+        }
+    }
     LoadSharedPlacements();
     ApplySharedPlacementsToNativeRando();
     ApplyPendingMmGrants();
