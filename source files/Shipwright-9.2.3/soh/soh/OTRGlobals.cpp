@@ -539,16 +539,8 @@ void OTRGlobals::RunExtract(int argc, char* argv[]) {
                         continue;
                     }
                     case WS_ONEDRIVE: {
-                        if (ownPath.string().find("OneDrive") != std::string::npos) {
-                            SohGui::RegisterPopup("SoH Path Error",
-                                                  "SoH appears to be in a OneDrive folder, which will cause issues.\n"
-                                                  "Please move it to a folder outside of OneDrive, like the root of a\n"
-                                                  "drive (e.g. \"C:\\Games\\SoH\").",
-                                                  "OK", "", [&]() { exit(0); });
-                        } else {
-                            windowsStep = WS_DONE;
-                            extractStep = args.empty() ? ES_EXTRACT : ES_EXTRACT_ARGS;
-                        }
+                        windowsStep = WS_DONE;
+                        extractStep = args.empty() ? ES_EXTRACT : ES_EXTRACT_ARGS;
                         continue;
                     }
                     default:
