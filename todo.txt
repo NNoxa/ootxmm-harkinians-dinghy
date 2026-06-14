@@ -1,6 +1,0 @@
-Goron:
-After groundpounding, goron still uses falling pose until next time no movement inputs
-If a ledge is climbable (NOT the ladder/vines type, just a ledge that is just low enough to jump up to climb) should be made unaccessible for goron, he is not able to pull his body weight up like that. He is able to use ladders and vines
-Add in sound effects:
--gorons voice SFX when: punching, hopping something, sidehopping, backflipping, and any that I missed which exist
-Goron model still needs to be bigger, I went back and forth between ours and the Skijer's version, and our goron is a good bit smaller
