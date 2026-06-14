@@ -873,6 +873,49 @@ function Get-StableHash {
     }
 }
 
+function Get-StableHashInt {
+    param([string]$Text)
+
+    $hash = Get-StableHash $Text
+    return [uint32][Convert]::ToUInt32($hash.Substring(0, 8), 16)
+}
+
+function Test-ShopPriceCheck {
+    param($Check)
+
+    return "$($Check.group)" -in @("shopsanity", "shops", "tingle_maps", "scrubs", "merchants")
+}
+
+function Get-PlacementPrice {
+    param(
+        [string]$SeedString,
+        $Check,
+        $Item,
+        $SettingValues
+    )
+
+    if (-not (Test-ShopPriceCheck $Check)) {
+        return $Item.price
+    }
+
+    $affordable = $false
+    if ($SettingValues.ContainsKey("ShopsAffordablePrices")) {
+        $affordable = ([int]$SettingValues["ShopsAffordablePrices"] -ne 0)
+    }
+
+    $maxPrice = 99
+    if (-not $affordable) {
+        $maxPrice = 500
+        if ($Check.game -eq "oot" -and $SettingValues.ContainsKey("IncludeTycoonWallet") -and
+            [int]$SettingValues["IncludeTycoonWallet"] -ne 0) {
+            $maxPrice = 999
+        }
+    }
+
+    $hashInput = "$SeedString|shop-price|$($Check.game)|$($Check.group)|$($Check.id)|$($Check.nativeId)"
+    return [int]((Get-StableHashInt $hashInput) % ($maxPrice + 1))
+}
+
 function Get-ObjectPropertyValue {
     param($Object, [string]$Name)
 
@@ -1106,6 +1149,10 @@ function Build-SettingValueMap {
     if ($null -eq $comboEnemySouls) {
         $comboEnemySouls = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.EnemySouls"
     }
+    $comboShopAffordablePrices = Get-CVarIntOrNull $sohConfig "gRandomizer.Combo.Shuffles.ShopsAffordablePrices"
+    if ($null -eq $comboShopAffordablePrices) {
+        $comboShopAffordablePrices = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.ShopsAffordablePrices"
+    }
     $mmStrayFairies = Get-JsonInt $mmOptions "RO_STRAY_FAIRIES_MAX"
     if ($null -ne $comboStrayFairies -and $comboStrayFairies -ne 0 -and $mmStrayFairies -eq 0) {
         $mmStrayFairies = 15
@@ -1113,6 +1160,10 @@ function Build-SettingValueMap {
     $mmEnemySouls = Get-JsonInt $mmOptions "RO_SHUFFLE_ENEMY_SOULS"
     if ($null -ne $comboEnemySouls -and $comboEnemySouls -ne 0) {
         $mmEnemySouls = 1
+    }
+    $shopAffordablePrices = Get-JsonInt $ootSettings "ShopsanityPricesAffordable"
+    if ($null -ne $comboShopAffordablePrices) {
+        $shopAffordablePrices = $comboShopAffordablePrices
     }
 
     return @{
@@ -1127,6 +1178,7 @@ function Build-SettingValueMap {
         ShuffleGerudoToken = (Get-JsonInt $ootSettings "ShuffleGerudoToken")
         BombchuBag = (Get-JsonInt $ootSettings "BombchuBag")
         IncludeTycoonWallet = (Get-JsonInt $ootSettings "IncludeTycoonWallet")
+        ShopsAffordablePrices = $shopAffordablePrices
         SkeletonKey = (Get-JsonInt $ootSettings "SkeletonKey")
         StartingMapsCompasses = (Get-JsonInt $ootSettings "StartingMapsCompasses")
         Keysanity = (Get-JsonInt $ootSettings "Keysanity")
@@ -1616,7 +1668,7 @@ function Build-SharedPlacementManifest {
                 itemSourceGame = $item.sourceGame
                 itemSourceCheck = $item.sourceCheck
                 model = $modelId
-                price = $item.price
+                price = Get-PlacementPrice $SeedString $check $item $settingValues
                 isCrossGame = ($check.game -ne $item.sourceGame -and $null -ne $item.sourceGame)
                 hintItemName = Get-HintItemName $item
                 hintPlaceName = Get-HintPlaceName $check
@@ -1652,7 +1704,7 @@ function Build-SharedPlacementManifest {
             itemSourceGame = $item.sourceGame
             itemSourceCheck = $item.sourceCheck
             model = $modelId
-            price = $item.price
+            price = Get-PlacementPrice $SeedString $check $item $settingValues
             isCrossGame = ($check.game -ne $item.sourceGame -and $null -ne $item.sourceGame)
             hintItemName = Get-HintItemName $item
             hintPlaceName = Get-HintPlaceName $check

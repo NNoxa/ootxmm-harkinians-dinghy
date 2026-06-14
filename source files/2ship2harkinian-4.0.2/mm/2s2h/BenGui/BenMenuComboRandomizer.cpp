@@ -38,10 +38,11 @@ static const std::vector<std::pair<const char*, int32_t>> kComboDefaults = {
     { "Logic.MM.MajoraRemainsRequired", 0 },
     { "Logic.MM.MajoraMasksRequired", 0 },
     { "Logic.MM.TrialsAccess", 0 },
-    { "OoT.ClosedForest", 0 },
-    { "OoT.KakarikoGate", 0 },
-    { "OoT.DoorOfTime", 0 },
-    { "OoT.ZorasFountain", 0 },
+    { "OoT.Access.Forest", 1 },
+    { "OoT.Access.KakarikoGate", 1 },
+    { "OoT.Access.DoorOfTime", 1 },
+    { "OoT.Access.ZorasFountain", 1 },
+    { "OoT.Access.JabuJabu", 1 },
     { "Dungeons.MapsCompasses", 0 },
     { "Dungeons.SmallKeys", 1 },
     { "Dungeons.BossKeys", 1 },
@@ -102,6 +103,11 @@ static const char* ComboCVar(const char* key) {
 static std::unordered_map<int32_t, const char*> offOn = {
     { 0, "Off" },
     { 1, "On" },
+};
+
+static std::unordered_map<int32_t, const char*> openClosed = {
+    { 0, "Open" },
+    { 1, "Closed" },
 };
 
 static std::unordered_map<int32_t, const char*> skipGetItemAnimations = {
@@ -427,10 +433,11 @@ static WidgetInfo& AddComboSlider(BenMenu* menu, WidgetPath& path, const char* l
 
 static void AddAreaAccessPlaceholders(BenMenu* menu, WidgetPath& path) {
     menu->AddWidget(path, "OoT Area Access", WIDGET_SEPARATOR_TEXT);
-    AddComboBox(menu, path, "Closed Forest", "OoT.ClosedForest", offOn);
-    AddComboBox(menu, path, "Kakariko Gate", "OoT.KakarikoGate", offOn);
-    AddComboBox(menu, path, "Door of Time", "OoT.DoorOfTime", offOn);
-    AddComboBox(menu, path, "Zora's Fountain", "OoT.ZorasFountain", offOn);
+    AddComboBox(menu, path, "Forest", "OoT.Access.Forest", openClosed, 1);
+    AddComboBox(menu, path, "Kakariko Gate", "OoT.Access.KakarikoGate", openClosed, 1);
+    AddComboBox(menu, path, "Door of Time", "OoT.Access.DoorOfTime", openClosed, 1);
+    AddComboBox(menu, path, "Zora's Fountain", "OoT.Access.ZorasFountain", openClosed, 1);
+    AddComboBox(menu, path, "Jabu-Jabu", "OoT.Access.JabuJabu", openClosed, 1);
 }
 
 } // namespace

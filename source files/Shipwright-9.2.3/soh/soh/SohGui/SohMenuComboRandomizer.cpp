@@ -43,6 +43,16 @@ constexpr int32_t RO_KEYRINGS_COUNT = 2;
 constexpr int32_t RO_DUNGEON_ENTRANCE_SHUFFLE_OFF = 0;
 constexpr int32_t RO_DUNGEON_ENTRANCE_SHUFFLE_ON = 1;
 constexpr int32_t RO_DUNGEON_ENTRANCE_SHUFFLE_ON_PLUS_GANON = 2;
+constexpr int32_t RO_CLOSED_FOREST_ON = 0;
+constexpr int32_t RO_CLOSED_FOREST_OFF = 2;
+constexpr int32_t RO_DOOROFTIME_CLOSED = 0;
+constexpr int32_t RO_DOOROFTIME_OPEN = 2;
+constexpr int32_t RO_ZF_CLOSED = 0;
+constexpr int32_t RO_ZF_OPEN = 2;
+constexpr int32_t RO_JABU_CLOSED = 0;
+constexpr int32_t RO_JABU_OPEN = 1;
+constexpr int32_t RO_KAK_GATE_CLOSED = 0;
+constexpr int32_t RO_KAK_GATE_OPEN = 1;
 constexpr int32_t RO_GERUDO_KEYS_VANILLA = 0;
 constexpr int32_t RO_GERUDO_KEYS_ANYWHERE = 3;
 constexpr int32_t RO_TOKENSANITY_OFF = 0;
@@ -83,10 +93,11 @@ static const std::vector<std::pair<const char*, int32_t>> kComboDefaults = {
     { "Logic.MM.MajoraRemainsRequired", 0 },
     { "Logic.MM.MajoraMasksRequired", 0 },
     { "Logic.MM.TrialsAccess", 0 },
-    { "OoT.ClosedForest", 0 },
-    { "OoT.KakarikoGate", 0 },
-    { "OoT.DoorOfTime", 0 },
-    { "OoT.ZorasFountain", 0 },
+    { "OoT.Access.Forest", 1 },
+    { "OoT.Access.KakarikoGate", 1 },
+    { "OoT.Access.DoorOfTime", 1 },
+    { "OoT.Access.ZorasFountain", 1 },
+    { "OoT.Access.JabuJabu", 1 },
     { "Dungeons.MapsCompasses", 0 },
     { "Dungeons.SmallKeys", 1 },
     { "Dungeons.BossKeys", 1 },
@@ -147,6 +158,11 @@ static const char* ComboCVar(const char* key) {
 static std::map<int32_t, const char*> offOn = {
     { 0, "Off" },
     { 1, "On" },
+};
+
+static std::map<int32_t, const char*> openClosed = {
+    { 0, "Open" },
+    { 1, "Closed" },
 };
 
 static std::map<int32_t, const char*> skipGetItemAnimations = {
@@ -352,6 +368,16 @@ static void ApplyComboSettingsToSoHInternal() {
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("SkipChildZelda"), ComboGet("Logic.SkipChildZelda") != 0);
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("SkipChildStealth"), ComboGet("Logic.SkipChildStealth") != 0);
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("SkipEponaRace"), ComboGet("Logic.SkipEponaRace") != 0);
+    SetInt(CVAR_RANDOMIZER_SETTING("ClosedForest"),
+           ComboGet("OoT.Access.Forest", 1) == 0 ? RO_CLOSED_FOREST_OFF : RO_CLOSED_FOREST_ON);
+    SetInt(CVAR_RANDOMIZER_SETTING("KakarikoGate"),
+           ComboGet("OoT.Access.KakarikoGate", 1) == 0 ? RO_KAK_GATE_OPEN : RO_KAK_GATE_CLOSED);
+    SetInt(CVAR_RANDOMIZER_SETTING("DoorOfTime"),
+           ComboGet("OoT.Access.DoorOfTime", 1) == 0 ? RO_DOOROFTIME_OPEN : RO_DOOROFTIME_CLOSED);
+    SetInt(CVAR_RANDOMIZER_SETTING("ZorasFountain"),
+           ComboGet("OoT.Access.ZorasFountain", 1) == 0 ? RO_ZF_OPEN : RO_ZF_CLOSED);
+    SetInt(CVAR_RANDOMIZER_SETTING("JabuJabu"),
+           ComboGet("OoT.Access.JabuJabu", 1) == 0 ? RO_JABU_OPEN : RO_JABU_CLOSED);
 
     static const std::map<int32_t, int32_t> dungeonItemMap = {
         { 0, RO_DUNGEON_ITEM_LOC_STARTWITH },
@@ -463,7 +489,7 @@ static void ApplyComboSettingsToSoHInternal() {
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("StartingDekuNuts"), false);
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("StartingBeans"), false);
     SetInt(CVAR_RANDOMIZER_SETTING("StartingSkulltulaToken"), 0);
-    SetInt(CVAR_RANDOMIZER_SETTING("StartingHearts"), 2);
+    SetInt(CVAR_RANDOMIZER_SETTING("StartingHearts"), 3);
 }
 
 static void CommitComboSettingsToSoH() {
@@ -491,6 +517,16 @@ static void SyncComboFromSoH() {
     ComboSet("Logic.SkipChildZelda", CVarGetInteger(CVAR_RANDOMIZER_SETTING("SkipChildZelda"), 0));
     ComboSet("Logic.SkipChildStealth", CVarGetInteger(CVAR_RANDOMIZER_SETTING("SkipChildStealth"), 0));
     ComboSet("Logic.SkipEponaRace", CVarGetInteger(CVAR_RANDOMIZER_SETTING("SkipEponaRace"), 0));
+    ComboSet("OoT.Access.Forest",
+             CVarGetInteger(CVAR_RANDOMIZER_SETTING("ClosedForest"), RO_CLOSED_FOREST_ON) == RO_CLOSED_FOREST_OFF ? 0 : 1);
+    ComboSet("OoT.Access.KakarikoGate",
+             CVarGetInteger(CVAR_RANDOMIZER_SETTING("KakarikoGate"), RO_KAK_GATE_CLOSED) == RO_KAK_GATE_OPEN ? 0 : 1);
+    ComboSet("OoT.Access.DoorOfTime",
+             CVarGetInteger(CVAR_RANDOMIZER_SETTING("DoorOfTime"), RO_DOOROFTIME_CLOSED) == RO_DOOROFTIME_OPEN ? 0 : 1);
+    ComboSet("OoT.Access.ZorasFountain",
+             CVarGetInteger(CVAR_RANDOMIZER_SETTING("ZorasFountain"), RO_ZF_CLOSED) == RO_ZF_OPEN ? 0 : 1);
+    ComboSet("OoT.Access.JabuJabu",
+             CVarGetInteger(CVAR_RANDOMIZER_SETTING("JabuJabu"), RO_JABU_CLOSED) == RO_JABU_OPEN ? 0 : 1);
 
     ComboSet("Dungeons.BossSouls", CVarGetInteger(CVAR_RANDOMIZER_SETTING("ShuffleBossSouls"), 0) != 0);
     ComboSet("Dungeons.KeyRings", CVarGetInteger(CVAR_RANDOMIZER_SETTING("ShuffleKeyRings"), 0) != 0);
@@ -615,14 +651,11 @@ static void AddNote(SohMenu* menu, WidgetPath& path, const char* text) {
 
 static void AddAreaAccessPlaceholders(SohMenu* menu, WidgetPath& path) {
     menu->AddWidget(path, "OoT Area Access", WIDGET_SEPARATOR_TEXT).RaceDisable(false);
-    AddComboBox(menu, path, "Closed Forest", "OoT.ClosedForest", offOn, 0,
-                "Temporary combo bridge. This will be mapped into the OoT area-access option set in a follow-up.");
-    AddComboBox(menu, path, "Kakariko Gate", "OoT.KakarikoGate", offOn, 0,
-                "Temporary combo bridge. This will be mapped into the OoT area-access option set in a follow-up.");
-    AddComboBox(menu, path, "Door of Time", "OoT.DoorOfTime", offOn, 0,
-                "Temporary combo bridge. This will be mapped into the OoT area-access option set in a follow-up.");
-    AddComboBox(menu, path, "Zora's Fountain", "OoT.ZorasFountain", offOn, 0,
-                "Temporary combo bridge. This will be mapped into the OoT area-access option set in a follow-up.");
+    AddComboBox(menu, path, "Forest", "OoT.Access.Forest", openClosed, 1);
+    AddComboBox(menu, path, "Kakariko Gate", "OoT.Access.KakarikoGate", openClosed, 1);
+    AddComboBox(menu, path, "Door of Time", "OoT.Access.DoorOfTime", openClosed, 1);
+    AddComboBox(menu, path, "Zora's Fountain", "OoT.Access.ZorasFountain", openClosed, 1);
+    AddComboBox(menu, path, "Jabu-Jabu", "OoT.Access.JabuJabu", openClosed, 1);
 }
 
 } // namespace
