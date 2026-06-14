@@ -204,7 +204,6 @@ std::vector<std::filesystem::path> GetMmO2rCandidatePaths() {
     if (const auto root = FindCrossoverRoot(); root.has_value()) {
         candidates.push_back(*root / "2ship" / "mm.o2r");
         candidates.push_back(*root / "extracted_win" / "2ship" / "mm.o2r");
-        candidates.push_back(*root / "Skijer" / "modded_soh" / "soh" / "mm.o2r");
     }
 
     candidates.push_back(cwd / "x64" / "Release" / "mm.o2r");

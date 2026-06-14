@@ -17,6 +17,28 @@ function Read-JsonFile {
     return Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
 }
 
+function Get-SoHDir {
+    param([string]$Root)
+
+    $release = Join-Path $Root "soh"
+    if (Test-Path -LiteralPath $release) {
+        return $release
+    }
+
+    return Join-Path $Root "extracted_win\soh"
+}
+
+function Get-2ShipDir {
+    param([string]$Root)
+
+    $release = Join-Path $Root "2ship"
+    if (Test-Path -LiteralPath $release) {
+        return $release
+    }
+
+    return Join-Path $Root "extracted_win\2ship"
+}
+
 function Get-JsonInt {
     param($Object, [string]$Name)
 
@@ -67,17 +89,23 @@ function Get-CVarIntOrNull {
 function Resolve-SoHSpoilerPath {
     param([string]$Root)
 
-    $configPath = Join-Path $Root "extracted_win\soh\shipofharkinian.json"
+    $sohDir = Get-SoHDir $Root
+    $configPath = Join-Path $sohDir "shipofharkinian.json"
     $config = Read-JsonFile $configPath
     $configured = $config.CVars.gGeneral.SpoilerLog
     if ($configured) {
-        $candidate = Join-Path (Join-Path $Root "extracted_win\soh") $configured
+        $candidate = Join-Path $sohDir $configured
         if (Test-Path -LiteralPath $candidate) {
             return $candidate
         }
     }
 
-    return Get-ChildItem -LiteralPath (Join-Path $Root "extracted_win\soh\Randomizer") -Filter "*.json" |
+    $randomizerDir = Join-Path $sohDir "Randomizer"
+    if (-not (Test-Path -LiteralPath $randomizerDir)) {
+        return $null
+    }
+
+    return Get-ChildItem -LiteralPath $randomizerDir -Filter "*.json" |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1 -ExpandProperty FullName
 }
@@ -85,17 +113,23 @@ function Resolve-SoHSpoilerPath {
 function Resolve-2ShipSpoilerPath {
     param([string]$Root)
 
-    $configPath = Join-Path $Root "extracted_win\2ship\2ship2harkinian.json"
+    $twoShipDir = Get-2ShipDir $Root
+    $configPath = Join-Path $twoShipDir "2ship2harkinian.json"
     $config = Read-JsonFile $configPath
     $configured = $config.CVars.gRando.SpoilerFile
     if ($configured) {
-        $candidate = Join-Path (Join-Path $Root "extracted_win\2ship") $configured
+        $candidate = Join-Path $twoShipDir $configured
         if (Test-Path -LiteralPath $candidate) {
             return $candidate
         }
     }
 
-    return Get-ChildItem -LiteralPath (Join-Path $Root "extracted_win\2ship\randomizer") -Filter "*.json" |
+    $randomizerDir = Join-Path $twoShipDir "randomizer"
+    if (-not (Test-Path -LiteralPath $randomizerDir)) {
+        return $null
+    }
+
+    return Get-ChildItem -LiteralPath $randomizerDir -Filter "*.json" |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1 -ExpandProperty FullName
 }
@@ -553,8 +587,8 @@ function Build-ModCatalog {
     param([string]$Root)
 
     $manifests = @()
-    $manifests += Read-ModManifests (Join-Path $Root "extracted_win\soh\mods") "oot"
-    $manifests += Read-ModManifests (Join-Path $Root "extracted_win\2ship\mods") "mm"
+    $manifests += Read-ModManifests (Join-Path (Get-SoHDir $Root) "mods") "oot"
+    $manifests += Read-ModManifests (Join-Path (Get-2ShipDir $Root) "mods") "mm"
 
     $items = @()
     $modChecks = @()
@@ -595,8 +629,8 @@ function Build-ModCatalog {
 function Build-EnabledCheckGroups {
     param($SeedManifest, [string]$Root)
 
-    $sohConfig = Read-JsonFile (Join-Path $Root "extracted_win\soh\shipofharkinian.json")
-    $twoShipConfig = Read-JsonFile (Join-Path $Root "extracted_win\2ship\2ship2harkinian.json")
+    $sohConfig = Read-JsonFile (Join-Path (Get-SoHDir $Root) "shipofharkinian.json")
+    $twoShipConfig = Read-JsonFile (Join-Path (Get-2ShipDir $Root) "2ship2harkinian.json")
     $ootSettings = $sohConfig.CVars.gRandoSettings
     $mmOptions = $twoShipConfig.CVars.gRando.Options
 
@@ -712,8 +746,8 @@ function Build-EnabledCheckGroups {
 function Get-EnabledTrapPolicy {
     param([string]$Root)
 
-    $sohConfig = Read-JsonFile (Join-Path $Root "extracted_win\soh\shipofharkinian.json")
-    $twoShipConfig = Read-JsonFile (Join-Path $Root "extracted_win\2ship\2ship2harkinian.json")
+    $sohConfig = Read-JsonFile (Join-Path (Get-SoHDir $Root) "shipofharkinian.json")
+    $twoShipConfig = Read-JsonFile (Join-Path (Get-2ShipDir $Root) "2ship2harkinian.json")
     $ootSettings = $sohConfig.CVars.gRandoSettings
     $mmOptions = $twoShipConfig.CVars.gRando.Options
 
@@ -1053,8 +1087,8 @@ function Get-ItemSourceSetting {
 function Build-SettingValueMap {
     param([string]$Root)
 
-    $sohConfig = Read-JsonFile (Join-Path $Root "extracted_win\soh\shipofharkinian.json")
-    $twoShipConfig = Read-JsonFile (Join-Path $Root "extracted_win\2ship\2ship2harkinian.json")
+    $sohConfig = Read-JsonFile (Join-Path (Get-SoHDir $Root) "shipofharkinian.json")
+    $twoShipConfig = Read-JsonFile (Join-Path (Get-2ShipDir $Root) "2ship2harkinian.json")
     $ootSettings = $sohConfig.CVars.gRandoSettings
     $mmOptions = $twoShipConfig.CVars.gRando.Options
 

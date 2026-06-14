@@ -5,6 +5,7 @@ build_tmp_soh/
 build_tools/
 tmp/
 combo_example/
+alpha crossover/
 resources/
 **/build/
 **/x64/
@@ -17,7 +18,7 @@ resources/
 # Local extracted/runtime folders
 extracted_win/
 roms/
-Skijer/
+Ski*er/
 build_metadata/
 
 # ROM-derived archives and binaries

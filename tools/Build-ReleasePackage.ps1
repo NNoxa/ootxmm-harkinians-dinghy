@@ -19,6 +19,7 @@ New-Item -ItemType Directory -Force -Path `
     (Join-Path $stage "ootxmm"), `
     (Join-Path $stage "soh\mods\OoTxMM"), `
     (Join-Path $stage "2ship\mods\OoTxMM"), `
+    (Join-Path $stage "tools"), `
     (Join-Path $stage "mods"), `
     (Join-Path $stage "roms") | Out-Null
 
@@ -62,6 +63,8 @@ Copy-Item -LiteralPath (Join-Path $assetRoot "manifest.ootxmm-assets.json") `
     -Destination (Join-Path $stage "soh\mods\OoTxMM\manifest.ootxmm-assets.json") -Force
 Copy-Item -LiteralPath (Join-Path $assetRoot "manifest.ootxmm-assets.json") `
     -Destination (Join-Path $stage "2ship\mods\OoTxMM\manifest.ootxmm-assets.json") -Force
+Copy-Item -LiteralPath (Join-Path $root "tools\Build-CrossoverPlacementPreview.ps1") `
+    -Destination (Join-Path $stage "tools\Build-CrossoverPlacementPreview.ps1") -Force
 
 @'
 {
@@ -69,6 +72,7 @@ Copy-Item -LiteralPath (Join-Path $assetRoot "manifest.ootxmm-assets.json") `
   "twoShipExe": "2ship/2ship.exe",
   "stateFile": "crossover_state.json",
   "handoffFile": "crossover_handoff.json",
+  "requiresPlacementBuilder": "tools/Build-CrossoverPlacementPreview.ps1",
   "pollMilliseconds": 250,
   "gracefulExitMilliseconds": 5000
 }
@@ -99,7 +103,7 @@ SETUP GUIDE:
 
   1. Look under the Releases tab in GitHub (right hand side)
   2. Download the latest release zip
-  3. This zip should have 5 folders: ootxmm/, soh/, 2ship/, mods/, roms/
+  3. This zip should have 6 folders: ootxmm/, soh/, 2ship/, tools/, mods/, roms/
   4. Place your OoT & MM ROMs inside of roms/
   ROMs I use:
     - OoT: (EU)(Beta)(GameCube)(Debug)
@@ -116,6 +120,7 @@ Compress-Archive -LiteralPath `
     (Join-Path $stage "ootxmm"), `
     (Join-Path $stage "soh"), `
     (Join-Path $stage "2ship"), `
+    (Join-Path $stage "tools"), `
     (Join-Path $stage "mods"), `
     (Join-Path $stage "roms"), `
     (Join-Path $stage "crossover_launcher.json"), `

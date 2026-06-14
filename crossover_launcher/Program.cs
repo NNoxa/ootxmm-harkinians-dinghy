@@ -58,6 +58,7 @@ internal static class Program {
             var handoffPath = Resolve(root, config.HandoffFile);
             EnsureStateFile(statePath);
             PrepareFirstRunArchives(root);
+            BootstrapMissingGameArchives(root, config);
 
             Console.WriteLine("SoH / 2Ship Crossover Launcher");
             Console.WriteLine($"Root: {root}");
@@ -274,6 +275,52 @@ internal static class Program {
         CopyFirstRunRom(root, GameId.Mm);
     }
 
+    private static void BootstrapMissingGameArchives(string root, LauncherConfig config) {
+        var bootstrapped = false;
+
+        if (!HasGameArchive(root, GameId.Oot) && HasFirstRunRom(root, GameId.Oot)) {
+            Console.WriteLine("oot.o2r is missing. Starting SoH first so it can generate the OoT game archive.");
+            RunUntilArchiveExists(root, config, GameId.Oot);
+            bootstrapped = true;
+        }
+
+        if (HasGameArchive(root, GameId.Oot) && !HasGameArchive(root, GameId.Mm) && HasFirstRunRom(root, GameId.Mm)) {
+            Console.WriteLine("mm.o2r is missing. Starting 2Ship so it can generate the MM game archive.");
+            RunUntilArchiveExists(root, config, GameId.Mm);
+            bootstrapped = true;
+        }
+
+        if (bootstrapped) {
+            Console.WriteLine("First-run archive bootstrap complete. Starting normal crossover flow.");
+        }
+    }
+
+    private static void RunUntilArchiveExists(string root, LauncherConfig config, GameId game) {
+        using var process = StartGame(root, config, game);
+        while (!process.HasExited) {
+            if (HasGameArchive(root, game)) {
+                StopGame(process, config.GracefulExitMilliseconds);
+                return;
+            }
+
+            Thread.Sleep(500);
+        }
+    }
+
+    private static bool HasGameArchive(string root, GameId game) {
+        var targetDir = game == GameId.Oot ? GetSohDir(root) : GetTwoShipDir(root);
+        var archiveName = game == GameId.Oot ? "oot.o2r" : "mm.o2r";
+        var mqArchiveName = game == GameId.Oot ? "oot-mq.o2r" : archiveName;
+        return File.Exists(Path.Combine(targetDir, archiveName)) ||
+               File.Exists(Path.Combine(targetDir, mqArchiveName));
+    }
+
+    private static bool HasFirstRunRom(string root, GameId game) {
+        var targetDir = game == GameId.Oot ? GetSohDir(root) : GetTwoShipDir(root);
+        var romName = game == GameId.Oot ? "oot.z64" : "mm.z64";
+        return File.Exists(Path.Combine(targetDir, romName)) || FindRom(root, game) != null;
+    }
+
     private static void CopyFirstRunRom(string root, GameId game) {
         var targetDir = game == GameId.Oot ? GetSohDir(root) : GetTwoShipDir(root);
         if (!Directory.Exists(targetDir)) {
@@ -298,12 +345,11 @@ internal static class Program {
     }
 
     private static string? FindRom(string root, GameId game) {
-        var romDir = Path.Combine(root, "roms");
-        if (!Directory.Exists(romDir)) {
-            return null;
-        }
+        var searchDirs = new[] { Path.Combine(root, "roms"), root }
+            .Where(Directory.Exists)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
 
-        var files = Directory.EnumerateFiles(romDir)
+        var files = searchDirs.SelectMany(Directory.EnumerateFiles)
             .Where(path => IsRomExtension(Path.GetExtension(path)))
             .Select(path => new FileInfo(path))
             .Where(file => file.Exists)

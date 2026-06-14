@@ -2700,7 +2700,7 @@ u16 PickMmGoronVoiceEffectIndex(u16 action) {
         u8 count;
     };
 
-    constexpr std::array<VoiceEffectAlternatives, 32> kSkijerGoronVoiceEffectIndices = {{
+    constexpr std::array<VoiceEffectAlternatives, 32> kMmGoronVoiceEffectIndices = {{
         { { 256, 257, 258, 259 }, 4 }, { { 260, 261, 0, 0 }, 2 },     { { 266, 267, 0, 0 }, 2 },
         { { 262, 281, 0, 0 }, 2 },     { { 263, 264, 0, 0 }, 2 },     { { 265, 266, 267, 0 }, 3 },
         { { 268, 269, 270, 0 }, 3 },   { { 273, 274, 0, 0 }, 2 },     { { 271, 272, 0, 0 }, 2 },
@@ -2715,8 +2715,8 @@ u16 PickMmGoronVoiceEffectIndex(u16 action) {
     }};
 
     const auto& alternatives =
-        action < kSkijerGoronVoiceEffectIndices.size() ? kSkijerGoronVoiceEffectIndices[action]
-                                                       : kSkijerGoronVoiceEffectIndices[0];
+        action < kMmGoronVoiceEffectIndices.size() ? kMmGoronVoiceEffectIndices[action]
+                                                       : kMmGoronVoiceEffectIndices[0];
     const u32 randomIndex = alternatives.count > 1 ? (gAudioContext.audioRandom % alternatives.count) : 0;
     return alternatives.effects[randomIndex];
 }
@@ -2727,7 +2727,7 @@ u16 PickMmZoraVoiceEffectIndex(u16 action) {
         u8 count;
     };
 
-    constexpr std::array<VoiceEffectAlternatives, 32> kSkijerZoraVoiceEffectIndices = {{
+    constexpr std::array<VoiceEffectAlternatives, 32> kMmZoraVoiceEffectIndices = {{
         { { 192, 193, 194, 195 }, 4 }, { { 196, 197, 0, 0 }, 2 },     { { 202, 203, 0, 0 }, 2 },
         { { 198, 217, 0, 0 }, 2 },     { { 199, 200, 0, 0 }, 2 },     { { 201, 202, 203, 0 }, 3 },
         { { 204, 205, 206, 0 }, 3 },   { { 209, 210, 0, 0 }, 2 },     { { 207, 208, 0, 0 }, 2 },
@@ -2742,8 +2742,8 @@ u16 PickMmZoraVoiceEffectIndex(u16 action) {
     }};
 
     const auto& alternatives =
-        action < kSkijerZoraVoiceEffectIndices.size() ? kSkijerZoraVoiceEffectIndices[action]
-                                                      : kSkijerZoraVoiceEffectIndices[0];
+        action < kMmZoraVoiceEffectIndices.size() ? kMmZoraVoiceEffectIndices[action]
+                                                      : kMmZoraVoiceEffectIndices[0];
     const u32 randomIndex = alternatives.count > 1 ? (gAudioContext.audioRandom % alternatives.count) : 0;
     return alternatives.effects[randomIndex];
 }
@@ -2754,7 +2754,7 @@ u16 PickMmDekuVoiceEffectIndex(u16 action) {
         u8 count;
     };
 
-    constexpr std::array<VoiceEffectAlternatives, 32> kSkijerDekuVoiceEffectIndices = {{
+    constexpr std::array<VoiceEffectAlternatives, 32> kMmDekuVoiceEffectIndices = {{
         { { 128, 129, 130, 131 }, 4 }, { { 132, 133, 0, 0 }, 2 },     { { 138, 139, 0, 0 }, 2 },
         { { 134, 153, 0, 0 }, 2 },     { { 135, 136, 0, 0 }, 2 },     { { 137, 138, 139, 0 }, 3 },
         { { 140, 141, 142, 0 }, 3 },   { { 145, 146, 0, 0 }, 2 },     { { 143, 144, 0, 0 }, 2 },
@@ -2769,8 +2769,8 @@ u16 PickMmDekuVoiceEffectIndex(u16 action) {
     }};
 
     const auto& alternatives =
-        action < kSkijerDekuVoiceEffectIndices.size() ? kSkijerDekuVoiceEffectIndices[action]
-                                                      : kSkijerDekuVoiceEffectIndices[0];
+        action < kMmDekuVoiceEffectIndices.size() ? kMmDekuVoiceEffectIndices[action]
+                                                      : kMmDekuVoiceEffectIndices[0];
     const u32 randomIndex = alternatives.count > 1 ? (gAudioContext.audioRandom % alternatives.count) : 0;
     return alternatives.effects[randomIndex];
 }
@@ -2851,8 +2851,8 @@ bool PlayMmZoraVoiceOneShot(u16 mmSfxId, f32 pitchScale = 1.0f) {
         }
 
         const u16 action = def.mmSfxId >= 0x68C0 ? static_cast<u16>(def.mmSfxId - 0x68C0) : 0;
-        const u16 skijerIndex = PickMmGoronVoiceEffectIndex(action);
-        const std::array<u16, 3> candidateIndices = { skijerIndex, def.instrumentIndex, static_cast<u16>(192 + action) };
+        const u16 mmVoiceIndex = PickMmGoronVoiceEffectIndex(action);
+        const std::array<u16, 3> candidateIndices = { mmVoiceIndex, def.instrumentIndex, static_cast<u16>(192 + action) };
 
         for (u16 candidateIndex : candidateIndices) {
             if (candidateIndex >= sMmGoronDirectAudioState.mmFont->numSfx) {
@@ -3080,7 +3080,7 @@ void UpdateMmGoronAudioForState(Player* player) {
         StopMmGoronDirectVoice(MM_GORON_VOICE_HEAT_LOOP);
     }
 
-    // Skijer/MM spike audio reads more like a transition hit than a separate sustained loop.
+    // MM/2Ship spike audio reads more like a transition hit than a separate sustained loop.
     // Keep the heat layer under powered roll and let the spike-start one-shot carry the spike cue.
     StopMmGoronDirectVoice(MM_GORON_VOICE_SPIKE_A);
     StopMmGoronDirectVoice(MM_GORON_VOICE_SPIKE_B);
@@ -4362,7 +4362,7 @@ extern "C" void OoTxMm_UpdateZoraBoomerangAimCamera(PlayState* play, Player* pla
         return;
     }
 
-    // Skijer/MM Player_GetHeight places Zora's aim camera exactly 68 units above the collision-box bottom.
+    // MM/2Ship Player_GetHeight places Zora's aim camera exactly 68 units above the collision-box bottom.
     const f32 headHeight = 68.0f;
     const s16 yaw = player->actor.focus.rot.y;
     const s16 pitch = player->actor.focus.rot.x;
@@ -4845,7 +4845,7 @@ bool StartZoraDolphinJump(PlayState* play, Player* player) {
     player->actor.gravity = -1.0f;
     player->actor.bgCheckFlags &= ~1;
 
-    // Skijer's form action owns water-state transitions while the dolphin arc starts. Our transform update runs
+    // MM's form action owns water-state transitions while the dolphin arc starts. Our transform update runs
     // after OoT's water handler, so move only to the detected water boundary before handing movement to the arc.
     // Pitch, horizontal speed, and vertical speed remain entirely trajectory-driven.
     if (player->actor.yDistToWater > 0.0f) {
@@ -6048,7 +6048,7 @@ void UpdateMotionAnimation(PlayState* play, Player* player) {
 
     if ((player->currentMask == PLAYER_MASK_GORON || player->currentMask == PLAYER_MASK_ZORA) &&
         (nextMotion == TRANSFORM_MASK_MOTION_WALK || nextMotion == TRANSFORM_MASK_MOTION_RUN)) {
-        // Skijer shares OoT's live link_normal walk/run pose. This keeps visible feet, animation rate, and OoT's
+        // MM shares OoT's live link_normal walk/run pose. This keeps visible feet, animation rate, and OoT's
         // animation-driven footstep events on the same clock, including when speed modifiers are active.
         CopyOotPlayerPoseToTransformSkeleton(player);
         sRuntimeState.motionState = TRANSFORM_MASK_MOTION_OOT_ACTION;
@@ -7498,7 +7498,7 @@ extern "C" void OoTxMm_DrawTransformMaskPlayer(PlayState* play, Player* player) 
         const f32 bounce = fabsf(sinf(sRuntimeState.goronRollBouncePhase)) * speedT;
         Matrix_Translate(0.0f, bounce * 3.0f, 0.0f, MTXMODE_APPLY);
         Matrix_RotateZYX(player->actor.shape.rot.x, 0, player->actor.shape.rot.z, MTXMODE_APPLY);
-        // Skijer mirrors MM/2Ship's ball squash/stretch: Y stretches, X compresses,
+        // MM mirrors MM/2Ship's ball squash/stretch: Y stretches, X compresses,
         // and Z follows the larger of the two to keep the rolling silhouette alive.
         {
             const f32 squash = sRuntimeState.goronRollSquash;
