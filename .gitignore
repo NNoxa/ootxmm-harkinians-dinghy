@@ -1,0 +1,77 @@
+# Build output and staging
+build_out/
+build_tmp_mm/
+build_tmp_soh/
+build_tools/
+tmp/
+combo_example/
+resources/
+**/build/
+**/x64/
+**/bin/
+**/obj/
+**/.vs/
+**/CMakeFiles/
+**/CMakeCache.txt
+
+# Local extracted/runtime folders
+extracted_win/
+roms/
+Skijer/
+build_metadata/
+
+# ROM-derived archives and binaries
+*.z64
+*.n64
+*.v64
+*.rom
+*.otr
+*.o2r
+*.zip
+*.7z
+*.rar
+!shared_assets/**/*.o2r
+
+# Compiled/debug artifacts
+*.exe
+*.dll
+*.pdb
+*.lib
+*.ilk
+*.exp
+*.obj
+*.log
+
+# Runtime state, saves, and generated seeds
+/Save/
+/saves/
+/logs/
+/debug/
+/Randomizer/
+/randomizer/
+*.sav
+*backup.json
+crossover_combo_settings.json
+crossover_dungeon_entrances.json
+crossover_dungeon_return.json
+crossover_dungeon_return_events.json
+crossover_handoff.json
+crossover_inventory.json
+crossover_last_dungeon_transition.json
+crossover_placements.json
+crossover_placements_preview.json
+crossover_seed.json
+crossover_state.json
+
+# Local UI/config churn
+imgui.ini
+shipofharkinian.json
+2ship2harkinian.json
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.user
+*.suo
+*.userosscache
+*.sln.docstates

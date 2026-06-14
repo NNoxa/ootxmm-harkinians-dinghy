@@ -1,0 +1,395 @@
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace SoH2ShipCrossover;
+
+internal enum GameId {
+    Oot,
+    Mm
+}
+
+internal sealed class CrossoverState {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public GameId ActiveGame { get; set; } = GameId.Oot;
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public GameId RequestedGame { get; set; } = GameId.Oot;
+
+    public string RequestedEntrance { get; set; } = "oot:resume";
+    public string? ReturnEntrance { get; set; }
+    public string? OriginEntrance { get; set; }
+    public int SaveSlot { get; set; } = 0;
+    public long CommandNonce { get; set; } = 0;
+    public string Status { get; set; } = "idle";
+    public string? LastError { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+internal sealed class LauncherConfig {
+    public string SohExe { get; set; } = Path.Combine("soh", "soh.exe");
+    public string TwoShipExe { get; set; } = Path.Combine("2ship", "2ship.exe");
+    public string StateFile { get; set; } = "crossover_state.json";
+    public string HandoffFile { get; set; } = "crossover_handoff.json";
+    public int PollMilliseconds { get; set; } = 250;
+    public int GracefulExitMilliseconds { get; set; } = 5000;
+}
+
+internal static class Program {
+    private const string OotResumeEntrance = "oot:resume";
+    private const string OotHappyMaskShopReturnEntrance = "oot:happy_mask_shop_return";
+    private const string OotHappyMaskShopReturnAfterFileSelectEntrance = "oot:happy_mask_shop_return_after_file_select";
+    private const string OotTitleScreenEntrance = "oot:title_screen";
+    private const int SaveSlotCount = 3;
+
+    private static readonly TimeSpan SaveDeletionDebounce = TimeSpan.FromSeconds(2);
+    private static readonly Dictionary<int, DateTimeOffset> MissingOotSaveSince = new();
+
+    private static readonly JsonSerializerOptions JsonOptions = new() {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() },
+    };
+
+    private static int Main(string[] args) {
+        try {
+            var root = FindProjectRoot(AppContext.BaseDirectory);
+            var config = LoadConfig(root);
+            var statePath = Resolve(root, config.StateFile);
+            var handoffPath = Resolve(root, config.HandoffFile);
+            EnsureStateFile(statePath);
+
+            Console.WriteLine("SoH / 2Ship Crossover Launcher");
+            Console.WriteLine($"Root: {root}");
+            Console.WriteLine($"State: {statePath}");
+            Console.WriteLine("Press Ctrl+C to exit.");
+
+            using var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, eventArgs) => {
+                eventArgs.Cancel = true;
+                cts.Cancel();
+            };
+
+            RunLoop(root, config, statePath, handoffPath, cts.Token);
+            return 0;
+        } catch (Exception ex) {
+            Console.Error.WriteLine(ex);
+            return 1;
+        }
+    }
+
+    private static void RunLoop(string root, LauncherConfig config, string statePath, string handoffPath, CancellationToken token) {
+        Process? currentProcess = null;
+        GameId currentGame = GameId.Oot;
+        long seenNonce = -1;
+
+        try {
+            SyncCorrelatedSaves(root, force: true);
+
+            var state = ReadState(statePath);
+            if (ShouldQueueOotReturnFromClosedMm(state)) {
+                QueueOotReturnFromClosedMm(statePath, handoffPath, state);
+            } else if (IsPendingOotReturnAfterFileSelect(state)) {
+                WriteHandoff(handoffPath, state);
+            } else if (IsInterruptedSwitch(state)) {
+                WriteHandoff(handoffPath, state);
+            }
+
+            currentGame = state.RequestedGame;
+            currentProcess = StartGame(root, config, currentGame);
+            state.ActiveGame = currentGame;
+            state.Status = "running";
+            state.LastError = null;
+            WriteState(statePath, state);
+
+            while (!token.IsCancellationRequested) {
+                Thread.Sleep(Math.Max(50, config.PollMilliseconds));
+                SyncCorrelatedSaves(root, force: false);
+
+                state = ReadState(statePath);
+                if (currentProcess is { HasExited: true }) {
+                    if (state.RequestedGame != currentGame) {
+                        Console.WriteLine($"Switch requested after {currentGame} exited: {currentGame} -> {state.RequestedGame} ({state.RequestedEntrance})");
+                        state.Status = "switching";
+                        state.LastError = null;
+                        state.UpdatedAt = DateTimeOffset.UtcNow;
+                        WriteState(statePath, state);
+                        WriteHandoff(handoffPath, state);
+
+                        currentGame = state.RequestedGame;
+                        currentProcess = StartGame(root, config, currentGame);
+
+                        state.ActiveGame = currentGame;
+                        state.Status = "running";
+                        state.UpdatedAt = DateTimeOffset.UtcNow;
+                        WriteState(statePath, state);
+                        seenNonce = state.CommandNonce;
+                        continue;
+                    }
+
+                    if (currentGame == GameId.Mm && state.RequestedGame == GameId.Mm) {
+                        Console.WriteLine("MM closed while active; queueing OoT return after file select.");
+                        QueueOotReturnFromClosedMm(statePath, handoffPath, state);
+                        currentGame = GameId.Oot;
+                        currentProcess = StartGame(root, config, currentGame);
+                        state = ReadState(statePath);
+                        state.ActiveGame = currentGame;
+                        state.Status = "running";
+                        state.LastError = null;
+                        WriteState(statePath, state);
+                        seenNonce = state.CommandNonce;
+                        continue;
+                    }
+
+                    return;
+                }
+
+                if (state.CommandNonce == seenNonce && currentProcess is { HasExited: false }) {
+                    continue;
+                }
+
+                seenNonce = state.CommandNonce;
+                if (state.RequestedGame == currentGame) {
+                    continue;
+                }
+
+                Console.WriteLine($"Switch requested: {currentGame} -> {state.RequestedGame} ({state.RequestedEntrance})");
+                state.Status = "switching";
+                state.LastError = null;
+                state.UpdatedAt = DateTimeOffset.UtcNow;
+                WriteState(statePath, state);
+                WriteHandoff(handoffPath, state);
+
+                StopGame(currentProcess, config.GracefulExitMilliseconds);
+                currentGame = state.RequestedGame;
+                currentProcess = StartGame(root, config, currentGame);
+
+                state.ActiveGame = currentGame;
+                state.Status = "running";
+                state.UpdatedAt = DateTimeOffset.UtcNow;
+                WriteState(statePath, state);
+            }
+        } finally {
+            StopGame(currentProcess, config.GracefulExitMilliseconds);
+        }
+    }
+
+    private static void SyncCorrelatedSaves(string root, bool force) {
+        for (var slot = 1; slot <= SaveSlotCount; slot++) {
+            var ootSavePath = GetOotSavePath(root, slot);
+            if (File.Exists(ootSavePath)) {
+                MissingOotSaveSince.Remove(slot);
+                continue;
+            }
+
+            var mmSavePath = GetMmSavePath(root, slot);
+            var mmBackupPath = GetMmBackupSavePath(root, slot);
+            if (!File.Exists(mmSavePath) && !File.Exists(mmBackupPath)) {
+                MissingOotSaveSince.Remove(slot);
+                continue;
+            }
+
+            if (!force) {
+                if (!MissingOotSaveSince.TryGetValue(slot, out var missingSince)) {
+                    MissingOotSaveSince[slot] = DateTimeOffset.UtcNow;
+                    continue;
+                }
+
+                if (DateTimeOffset.UtcNow - missingSince < SaveDeletionDebounce) {
+                    continue;
+                }
+            }
+
+            DeleteFileIfExists(mmSavePath);
+            DeleteFileIfExists(mmBackupPath);
+            MissingOotSaveSince.Remove(slot);
+            Console.WriteLine($"Deleted MM save slot {slot} because OoT file{slot}.sav is missing.");
+        }
+    }
+
+    private static string GetOotSavePath(string root, int slot) {
+        return Path.Combine(GetSohDir(root), "Save", $"file{slot}.sav");
+    }
+
+    private static string GetMmSavePath(string root, int slot) {
+        return Path.Combine(GetTwoShipDir(root), "saves", $"file{slot}.json");
+    }
+
+    private static string GetMmBackupSavePath(string root, int slot) {
+        return Path.Combine(GetTwoShipDir(root), "saves", $"file{slot}backup.json");
+    }
+
+    private static string GetSohDir(string root) {
+        var releasePath = Path.Combine(root, "soh");
+        if (Directory.Exists(releasePath)) {
+            return releasePath;
+        }
+
+        return Path.Combine(root, "extracted_win", "soh");
+    }
+
+    private static string GetTwoShipDir(string root) {
+        var releasePath = Path.Combine(root, "2ship");
+        if (Directory.Exists(releasePath)) {
+            return releasePath;
+        }
+
+        return Path.Combine(root, "extracted_win", "2ship");
+    }
+
+    private static void DeleteFileIfExists(string path) {
+        try {
+            if (File.Exists(path)) {
+                File.Delete(path);
+            }
+        } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) {
+            Console.WriteLine($"Could not delete correlated save file {path}: {ex.Message}");
+        }
+    }
+
+    private static Process StartGame(string root, LauncherConfig config, GameId game) {
+        var exe = Resolve(root, game == GameId.Oot ? config.SohExe : config.TwoShipExe);
+        if (!File.Exists(exe)) {
+            throw new FileNotFoundException($"Missing executable for {game}: {exe}", exe);
+        }
+
+        var startInfo = new ProcessStartInfo {
+            FileName = exe,
+            WorkingDirectory = Path.GetDirectoryName(exe)!,
+            UseShellExecute = false,
+        };
+
+        var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Failed to start {exe}");
+        Console.WriteLine($"Started {game}: pid {process.Id}");
+        return process;
+    }
+
+    private static void StopGame(Process? process, int gracefulExitMilliseconds) {
+        if (process == null || process.HasExited) {
+            return;
+        }
+
+        try {
+            process.CloseMainWindow();
+            if (process.WaitForExit(gracefulExitMilliseconds)) {
+                return;
+            }
+
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+        } catch (InvalidOperationException) {
+        }
+    }
+
+    private static LauncherConfig LoadConfig(string root) {
+        var path = Path.Combine(root, "crossover_launcher.json");
+        if (!File.Exists(path)) {
+            return new LauncherConfig();
+        }
+
+        return JsonSerializer.Deserialize<LauncherConfig>(File.ReadAllText(path), JsonOptions) ?? new LauncherConfig();
+    }
+
+    private static void EnsureStateFile(string path) {
+        if (File.Exists(path)) {
+            return;
+        }
+
+        WriteState(path, new CrossoverState {
+            ActiveGame = GameId.Oot,
+            RequestedGame = GameId.Oot,
+            RequestedEntrance = OotResumeEntrance,
+            Status = "idle",
+        });
+    }
+
+    private static bool ShouldQueueOotReturnFromClosedMm(CrossoverState state) {
+        return state.ActiveGame == GameId.Mm &&
+               state.RequestedGame == GameId.Mm &&
+               state.Status == "running";
+    }
+
+    private static bool IsPendingOotReturnAfterFileSelect(CrossoverState state) {
+        return state.RequestedGame == GameId.Oot &&
+               (state.RequestedEntrance == OotHappyMaskShopReturnAfterFileSelectEntrance ||
+                state.RequestedEntrance == OotTitleScreenEntrance);
+    }
+
+    private static bool IsInterruptedSwitch(CrossoverState state) {
+        return state.Status is "requested" or "switching";
+    }
+
+    private static void QueueOotReturnFromClosedMm(string statePath, string handoffPath, CrossoverState state) {
+        state.RequestedGame = GameId.Oot;
+        state.RequestedEntrance = OotHappyMaskShopReturnAfterFileSelectEntrance;
+        state.ReturnEntrance = null;
+        state.OriginEntrance = null;
+        state.CommandNonce++;
+        state.Status = "pending_oot_return";
+        state.LastError = null;
+        WriteState(statePath, state);
+        WriteHandoff(handoffPath, state);
+    }
+
+    private static CrossoverState ReadState(string path) {
+        for (var attempt = 0; attempt < 5; attempt++) {
+            try {
+                return JsonSerializer.Deserialize<CrossoverState>(File.ReadAllText(path), JsonOptions) ?? new CrossoverState();
+            } catch (IOException) {
+                Thread.Sleep(25);
+            } catch (JsonException) {
+                Thread.Sleep(25);
+            }
+        }
+
+        return new CrossoverState {
+            Status = "error",
+            LastError = $"Could not read {path}",
+        };
+    }
+
+    private static void WriteState(string path, CrossoverState state) {
+        state.UpdatedAt = DateTimeOffset.UtcNow;
+        var tempPath = path + ".tmp";
+        File.WriteAllText(tempPath, JsonSerializer.Serialize(state, JsonOptions));
+        File.Move(tempPath, path, overwrite: true);
+    }
+
+    private static void WriteHandoff(string path, CrossoverState state) {
+        var handoff = new {
+            targetGame = state.RequestedGame.ToString(),
+            targetEntrance = state.RequestedEntrance,
+            returnEntrance = state.ReturnEntrance,
+            originEntrance = state.OriginEntrance,
+            saveSlot = state.SaveSlot,
+            commandNonce = state.CommandNonce,
+            updatedAt = DateTimeOffset.UtcNow,
+        };
+        var tempPath = path + ".tmp";
+        File.WriteAllText(tempPath, JsonSerializer.Serialize(handoff, JsonOptions));
+        File.Move(tempPath, path, overwrite: true);
+    }
+
+    private static string FindProjectRoot(string start) {
+        var dir = new DirectoryInfo(start);
+        while (dir != null) {
+            if (File.Exists(Path.Combine(dir.FullName, "crossover_launcher.json")) ||
+                (Directory.Exists(Path.Combine(dir.FullName, "soh")) &&
+                 Directory.Exists(Path.Combine(dir.FullName, "2ship")))) {
+                return dir.FullName;
+            }
+
+            if (Directory.Exists(Path.Combine(dir.FullName, "extracted_win")) &&
+                Directory.Exists(Path.Combine(dir.FullName, "source files"))) {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        return Directory.GetCurrentDirectory();
+    }
+
+    private static string Resolve(string root, string path) {
+        return Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(root, path));
+    }
+}
