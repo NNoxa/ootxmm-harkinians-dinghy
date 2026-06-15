@@ -6,6 +6,8 @@ TODO:
  - Fix prices in shops 
  - Replace placeholder textures
  - Add more shuffle options 
+ - Fix incorrect audio effects while using transformation masks in OoT
+ - Fix shuffle Ocarina Buttons inconsistencies
  - Probably fix many, many other bugs
 
 
