@@ -112,6 +112,8 @@ Done.
 
 Please describe issues you run into on Discord, under soh-modding
 
+Some frustrating known bugs can be found in todo.txt
+
     
 
 
