@@ -388,12 +388,15 @@ extern "C" void Randomizer_InitSaveFile() {
     }
 
     if (Randomizer_GetSettingValue(RSK_SKIP_CHILD_ZELDA)) {
+        const bool maskQuestShuffled = Randomizer_GetSettingValue(RSK_MASK_QUEST) == RO_MASK_QUEST_SHUFFLE;
         GetItemEntry getItemEntry = Randomizer_GetItemFromKnownCheck(RC_SONG_FROM_IMPA, (GetItemID)RG_ZELDAS_LULLABY);
         StartingItemGive(getItemEntry, RC_SONG_FROM_IMPA);
         getItemEntry = Randomizer_GetItemFromKnownCheck(RC_HC_MALON_EGG, (GetItemID)RG_WEIRD_EGG);
-        StartingItemGive(getItemEntry, RC_HC_ZELDAS_LETTER);
-        getItemEntry = Randomizer_GetItemFromKnownCheck(RC_HC_ZELDAS_LETTER, (GetItemID)RG_ZELDAS_LETTER);
         StartingItemGive(getItemEntry, RC_HC_MALON_EGG);
+        if (!maskQuestShuffled) {
+            getItemEntry = Randomizer_GetItemFromKnownCheck(RC_HC_ZELDAS_LETTER, (GetItemID)RG_ZELDAS_LETTER);
+            StartingItemGive(getItemEntry, RC_HC_ZELDAS_LETTER);
+        }
 
         // Malon/Talon back at ranch.
         Flags_SetEventChkInf(EVENTCHKINF_OBTAINED_POCKET_EGG);
@@ -401,19 +404,25 @@ extern "C" void Randomizer_InitSaveFile() {
         Flags_SetEventChkInf(EVENTCHKINF_TALON_WOKEN_IN_CASTLE);
         Flags_SetEventChkInf(EVENTCHKINF_TALON_RETURNED_FROM_CASTLE);
 
-        // Set "Got Zelda's Letter" flag. Also ensures Saria is back at SFM.
-        Flags_SetEventChkInf(EVENTCHKINF_OBTAINED_ZELDAS_LETTER);
-        Flags_SetRandomizerInf(RAND_INF_ZELDAS_LETTER);
-        Flags_SetRandomizerInf(RAND_INF_CHILD_TRADES_HAS_LETTER_ZELDA);
+        if (!maskQuestShuffled) {
+            // Set "Got Zelda's Letter" flag. Also ensures Saria is back at SFM.
+            Flags_SetEventChkInf(EVENTCHKINF_OBTAINED_ZELDAS_LETTER);
+            Flags_SetRandomizerInf(RAND_INF_ZELDAS_LETTER);
+            Flags_SetRandomizerInf(RAND_INF_CHILD_TRADES_HAS_LETTER_ZELDA);
+        }
 
         // Got item from Impa.
         Flags_SetEventChkInf(EVENTCHKINF_LEARNED_ZELDAS_LULLABY);
 
         gSaveContext.sceneFlags[SCENE_HYRULE_CASTLE].swch |= (1 << 0x4); // Move milk crates in Hyrule Castle to moat.
 
-        // Set this at the end to ensure we always start with the letter.
-        // This is for the off chance, we got the Weird Egg from Impa (which should never happen).
-        INV_CONTENT(ITEM_LETTER_ZELDA) = ITEM_LETTER_ZELDA;
+        if (!maskQuestShuffled) {
+            // Set this at the end to ensure we always start with the letter.
+            // This is for the off chance, we got the Weird Egg from Impa (which should never happen).
+            INV_CONTENT(ITEM_LETTER_ZELDA) = ITEM_LETTER_ZELDA;
+        } else if (INV_CONTENT(ITEM_LETTER_ZELDA) == ITEM_LETTER_ZELDA) {
+            INV_CONTENT(ITEM_LETTER_ZELDA) = ITEM_NONE;
+        }
     }
 
     if (Randomizer_GetSettingValue(RSK_SHUFFLE_MASTER_SWORD) && startingAge == RO_AGE_ADULT) {

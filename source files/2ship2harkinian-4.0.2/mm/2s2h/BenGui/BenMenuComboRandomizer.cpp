@@ -306,7 +306,7 @@ static void ApplyComboSettingsToMmInternal() {
     SetBoolOption(RO_SHUFFLE_BARREL_DROPS, ComboGet("Items.Crates") != 0);
     SetBoolOption(RO_SHUFFLE_FREESTANDING_ITEMS, ComboGet("Shuffles.FreestandingItems") != 0);
     SetBoolOption(RO_SHUFFLE_OCARINA_BUTTONS, ComboGet("Shuffles.OcarinaButtons") != 0);
-    SetBoolOption(RO_SHUFFLE_ENEMY_SOULS, ComboGetFirst("Shuffles.MM.EnemySouls", "Shuffles.EnemySouls") != 0);
+    SetBoolOption(RO_SHUFFLE_ENEMY_SOULS, ComboGet("Shuffles.MM.EnemySouls") != 0);
     SetBoolOption(RO_CLOCK_SHUFFLE, ComboGet("Shuffles.MM.Time") != 0);
     SetOption(RO_CLOCK_SHUFFLE_PROGRESSIVE, RO_CLOCK_SHUFFLE_RANDOM);
     SetOption(RO_CLOCK_TERMINAL_TIME, 0);

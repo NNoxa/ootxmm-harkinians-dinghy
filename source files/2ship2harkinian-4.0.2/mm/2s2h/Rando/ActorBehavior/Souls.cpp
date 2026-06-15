@@ -124,9 +124,8 @@ void ShouldActorDraw(Actor* actor, bool* should, RandoInf randoInf) {
 
 void Rando::ActorBehavior::InitSoulsBehavior() {
     bool shouldBossRegister = IS_RANDO && RANDO_SAVE_OPTIONS[RO_SHUFFLE_BOSS_SOULS] == RO_GENERIC_YES;
-    bool shouldEnemyInjure = IS_RANDO && (RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] == RO_GENERIC_YES ||
-                                          CVarGetInteger("gRandomizer.Combo.Shuffles.MM.EnemySouls", 0) != 0 ||
-                                          CVarGetInteger("gRandomizer.Combo.Shuffles.EnemySouls", 0) != 0);
+    bool shouldEnemyInjure = IS_RANDO && CVarGetInteger("gRandomizer.Combo.Shuffles.MM.EnemySouls",
+                                                        RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS]) == RO_GENERIC_YES;
 
     COND_VB_SHOULD(VB_PERFORM_AC_COLLISION, shouldEnemyInjure, {
         Collider* at = va_arg(args, Collider*);

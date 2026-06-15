@@ -649,27 +649,21 @@ function Build-EnabledCheckGroups {
     if ($null -eq $comboEnemySouls) {
         $comboEnemySouls = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.MM.EnemySouls"
     }
-    if ($null -eq $comboEnemySouls) {
-        $comboEnemySouls = Get-CVarIntOrNull $sohConfig "gRandomizer.Combo.Shuffles.EnemySouls"
-    }
-    if ($null -eq $comboEnemySouls) {
-        $comboEnemySouls = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.EnemySouls"
-    }
     $comboShops = Get-CVarIntOrNull $sohConfig "gRandomizer.Combo.Shuffles.Shops"
     if ($null -eq $comboShops) {
         $comboShops = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.Shops"
     }
     $mmStrayFairies = Get-JsonInt $mmOptions "RO_STRAY_FAIRIES_MAX"
-    if ($null -ne $comboStrayFairies -and $comboStrayFairies -ne 0 -and $mmStrayFairies -eq 0) {
-        $mmStrayFairies = 15
+    if ($null -ne $comboStrayFairies) {
+        $mmStrayFairies = if ($comboStrayFairies -ne 0) { 15 } else { 0 }
     }
     $mmEnemySouls = Get-JsonInt $mmOptions "RO_SHUFFLE_ENEMY_SOULS"
-    if ($null -ne $comboEnemySouls -and $comboEnemySouls -ne 0) {
-        $mmEnemySouls = 1
+    if ($null -ne $comboEnemySouls) {
+        $mmEnemySouls = if ($comboEnemySouls -ne 0) { 1 } else { 0 }
     }
     $mmTingleShops = Get-JsonInt $mmOptions "RO_SHUFFLE_TINGLE_SHOPS"
-    if ($null -ne $comboShops -and $comboShops -ne 0) {
-        $mmTingleShops = 1
+    if ($null -ne $comboShops) {
+        $mmTingleShops = if ($comboShops -ne 0) { 1 } else { 0 }
     }
     $candidates = @(
         @("oot", "grass", "ShuffleGrass", (Get-JsonInt $ootSettings "ShuffleGrass")),
@@ -1143,23 +1137,17 @@ function Build-SettingValueMap {
     if ($null -eq $comboEnemySouls) {
         $comboEnemySouls = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.MM.EnemySouls"
     }
-    if ($null -eq $comboEnemySouls) {
-        $comboEnemySouls = Get-CVarIntOrNull $sohConfig "gRandomizer.Combo.Shuffles.EnemySouls"
-    }
-    if ($null -eq $comboEnemySouls) {
-        $comboEnemySouls = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.EnemySouls"
-    }
     $comboShopAffordablePrices = Get-CVarIntOrNull $sohConfig "gRandomizer.Combo.Shuffles.ShopsAffordablePrices"
     if ($null -eq $comboShopAffordablePrices) {
         $comboShopAffordablePrices = Get-CVarIntOrNull $twoShipConfig "gRandomizer.Combo.Shuffles.ShopsAffordablePrices"
     }
     $mmStrayFairies = Get-JsonInt $mmOptions "RO_STRAY_FAIRIES_MAX"
-    if ($null -ne $comboStrayFairies -and $comboStrayFairies -ne 0 -and $mmStrayFairies -eq 0) {
-        $mmStrayFairies = 15
+    if ($null -ne $comboStrayFairies) {
+        $mmStrayFairies = if ($comboStrayFairies -ne 0) { 15 } else { 0 }
     }
     $mmEnemySouls = Get-JsonInt $mmOptions "RO_SHUFFLE_ENEMY_SOULS"
-    if ($null -ne $comboEnemySouls -and $comboEnemySouls -ne 0) {
-        $mmEnemySouls = 1
+    if ($null -ne $comboEnemySouls) {
+        $mmEnemySouls = if ($comboEnemySouls -ne 0) { 1 } else { 0 }
     }
     $shopAffordablePrices = Get-JsonInt $ootSettings "ShopsanityPricesAffordable"
     if ($null -ne $comboShopAffordablePrices) {

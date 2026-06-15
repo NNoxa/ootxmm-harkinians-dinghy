@@ -1340,10 +1340,8 @@ void EnforceOoTxMmRandoSettings() {
     CVarSetInteger(Rando::StaticData::Options[RO_SHUFFLE_TREE_DROPS].cvar, RO_GENERIC_OFF);
     CVarSetInteger(Rando::StaticData::Options[RO_ACCESS_DUNGEONS].cvar, RO_ACCESS_DUNGEONS_FORM_AND_SONG);
     if (IS_RANDO) {
-        if (CVarGetInteger("gRandomizer.Combo.Shuffles.MM.EnemySouls", 0) != 0 ||
-            CVarGetInteger("gRandomizer.Combo.Shuffles.EnemySouls", 0) != 0) {
-            RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] = RO_GENERIC_YES;
-        }
+        RANDO_SAVE_OPTIONS[RO_SHUFFLE_ENEMY_SOULS] =
+            CVarGetInteger("gRandomizer.Combo.Shuffles.MM.EnemySouls", 0) != 0 ? RO_GENERIC_YES : RO_GENERIC_NO;
         if (CVarGetInteger("gRandomizer.Combo.Shuffles.OcarinaButtons", 0) != 0) {
             RANDO_SAVE_OPTIONS[RO_SHUFFLE_OCARINA_BUTTONS] = RO_GENERIC_YES;
         }

@@ -75,6 +75,7 @@ constexpr int32_t RO_SONG_SHUFFLE_ANYWHERE = 3;
 constexpr int32_t RO_BOMBCHU_BAG_NONE = 0;
 constexpr int32_t RO_BOMBCHU_BAG_SINGLE = 1;
 constexpr int32_t RO_BOMBCHU_BAG_PROGRESSIVE = 2;
+constexpr int32_t RO_MASK_QUEST_SHUFFLE = 2;
 
 static const std::vector<std::pair<const char*, int32_t>> kComboDefaults = {
     { "General.ContainerStyleMatchesContents", 0 },
@@ -472,6 +473,7 @@ static void ApplyComboSettingsToSoHInternal() {
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("100GSHint"), false);
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("MaskShopHint"), false);
     SetBoolAsInt(CVAR_RANDOMIZER_SETTING("LoachHint"), false);
+    SetInt(CVAR_RANDOMIZER_SETTING("CompleteMaskQuest"), RO_MASK_QUEST_SHUFFLE);
 
     applyMapped(CVAR_RANDOMIZER_SETTING("LinksPocket"),
                 { { 0, RO_LINKS_POCKET_DUNGEON_REWARD },
