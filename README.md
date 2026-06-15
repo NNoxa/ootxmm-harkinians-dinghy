@@ -6,6 +6,7 @@
 
 Github Link: https://github.com/NNoxa/ootxmm-harkinians-dinghy
 
+
 This uses SoH ver. Ackbar Delta 9.2.3 and 2ship ver. Keiichi Charlie 4.0.2. This is in no way associated with official Harbour Masters 64 Projects.
 Expect to run into many bugs and crashes along the way. This is a vibecoded project, I just wanted to make something fun to play until someone makes a real 
 version. It is built using Skijer's Not Enough Items Mod for SoH, but translated to the current latest build of SoH and 2ship (Big thanks to him for laying 
