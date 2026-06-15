@@ -1,0 +1,17 @@
+TODO:
+
+ - Fix item models with overlapping names but differing models (hookshot)
+ - Add Assign Multiple Masks to C-Buttons
+ - Fix Combo Rando Menu inconsistencies
+ - Fix prices in shops 
+ - Replace placeholder textures
+ - Add more shuffle options 
+ - Probably fix many, many other bugs
+
+
+"Someday" Features:
+ - Blast Mask in OoT
+ - Giant's Mask anywhere in MM
+ - Din's/Farore's/Nayru's in MM
+ - Hoverboots in MM
+ 
