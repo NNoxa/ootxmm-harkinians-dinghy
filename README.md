@@ -1,4 +1,4 @@
-# SoHx2s2h Randomizer - Harkinian's Dinghy - Alpha Out NOW
+# [VIBECODED] SoHx2s2h Randomizer - Alpha Out NOW
 
 # [PLEASE READ!]
 
@@ -14,10 +14,6 @@ the groundwork! Check out his mod below, there are so many cool items that are n
 masks would be a nice addition to this, so I decided to just bake it into this mod. These aren't perfect implementations by any means, but I figured there's still fun to be had.
 
 Skijer's Not Enough Items SoH Mod (Download not required for this mod): https://github.com/skijer/Shipwright/tree/Not-Enough-Items
-
-
-It's named Harkinian's Dinghy because a dinghy is used to travel back and forth between ships
-
 
 Switch between Ship of Harkinian and 2ship2harkinian via the Happy Mask Shop (OoT) and Clock Tower Interior (MM). Items are shuffled between both games.
 The first time loading 2ship after generating the o2r can take upwards of ~30s
